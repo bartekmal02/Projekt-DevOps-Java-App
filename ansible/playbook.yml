@@ -1,0 +1,41 @@
+---
+- name: "Konfiguracja serwera: Docker, Aplikacja i Monitoring"
+  hosts: all
+  become: yes
+  tasks:
+    - name: "Aktualizacja repozytoriów"
+      apt:
+        update_cache: yes
+
+    - name: "Instalacja Dockera i Docker Compose"
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+
+    - name: "Uruchomienie usługi Docker"
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: "Tworzenie katalogu na aplikacje"
+      file:
+        path: /home/ubuntu/app
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+
+    - name: "Kopiowanie plików konfiguracyjnych"
+      copy:
+        src: "{{ item }}"
+        dest: /home/ubuntu/app/
+        owner: ubuntu
+        group: ubuntu
+      with_items:
+        - ./docker-compose.yml
+        - ./prometheus.yml
+
+    - name: "Uruchomienie stosu Docker Compose"
+      shell: "cd /home/ubuntu/app && docker-compose up -d"

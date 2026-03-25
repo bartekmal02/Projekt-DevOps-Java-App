@@ -1,0 +1,77 @@
+name: "Infrastructure Deployment"
+
+on:
+  push:
+    branches:
+      - master  # Upewnij się, że Twoja gałąź to 'master'
+
+jobs:
+  terraform:
+    name: "Build, Provision and Deploy"
+    runs-on: ubuntu-latest
+    
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TF_VAR_key_name: ${{ secrets.TF_VAR_KEY_NAME }}
+
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+
+      # --- ETAP 1: BUDOWANIE APLIKACJI (Java 21) ---
+      - name: "Set up JDK 21"
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: "Build Application with Maven"
+        run: mvn clean package -DskipTests # Tworzy target/my-app-1.0-SNAPSHOT.jar
+
+      # --- ETAP 2: INFRASTRUKTURA (Terraform) ---
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@v3
+
+      - name: "Terraform Bootstrap"
+        run: |
+          cd bootstrap
+          terraform init
+          terraform apply -auto-approve
+
+      - name: "Terraform Main Infrastructure"
+        run: |
+          cd terraform
+          terraform init -reconfigure
+          terraform apply -auto-approve
+
+      - name: "Display Outputs"
+        id: tf_outputs
+        run: |
+          cd terraform
+          echo "SERVER_IP=$(terraform output -raw instance_public_ip)" >> $GITHUB_ENV
+          terraform output
+
+      # --- ETAP 3: KONFIGURACJA I DEPLOY (Ansible) ---
+      - name: "Setup SSH Key"
+        run: |
+          echo "${{ secrets.AWS_SSH_KEY_CONTENT }}" > private_key.pem
+          chmod 600 private_key.pem
+
+      - name: "Run Ansible Playbook"
+        run: |
+          ansible-playbook -i "${{ env.SERVER_IP }}," \
+            --private-key private_key.pem \
+            -u ubuntu \
+            --ssh-common-args='-o StrictHostKeyChecking=no' \
+            ansible/playbook.yml
+
+      # --- ETAP 4: POWIADOMIENIE (Wymóg projektu) ---
+      - name: "Discord Notification"
+        if: always()
+        run: |
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d '{"content": "🚀 **Status wdrożenia projektu:** ${{ job.status }}\n**IP Serwera:** ${{ env.SERVER_IP }}\n**Link:** http://${{ env.SERVER_IP }}:8080"}' \
+               ${{ secrets.DISCORD_WEBHOOK }}
