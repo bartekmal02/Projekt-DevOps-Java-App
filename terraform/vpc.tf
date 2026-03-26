@@ -32,37 +32,3 @@ resource "aws_route_table_association" "a" {
   subnet_id      = aws_subnet.main_subnet.id
   route_table_id = aws_route_table.main_rt.id
 }
-
-# DEFINICJA GRUPY BEZPIECZEŃSTWA (Security Group)
-resource "aws_security_group" "main_sg" {
-  name        = "${var.project_name}-sg"
-  description = "Allow SSH and App traffic"
-  vpc_id      = aws_vpc.main_vpc.id
-
-  # Reguła wejściowa: SSH (dla Ansible)
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Pozwala na połączenie SSH z dowolnego IP
-  }
-
-  # Reguła wejściowa: Aplikacja (np. Java Spring na 8080)
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-sg"
-  }
-}
