@@ -29,6 +29,17 @@ jobs:
       - name: "Setup Terraform"
         uses: hashicorp/setup-terraform@v3
 
+      - name: "Empty S3 Bucket before destruction"
+        run: |
+          aws s3 rm s3://barmal-devops-project-state --recursive || echo "Bucket already empty or doesn't exist"
+
+      - name: "Terraform Destroy"
+        id: destroy_step
+        run: |
+          cd terraform
+          terraform init -reconfigure
+          terraform destroy -auto-approve
+
       - name: "Terraform Destroy"
         id: destroy_step
         run: |
