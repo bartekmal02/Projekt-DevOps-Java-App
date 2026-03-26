@@ -3,13 +3,11 @@ version: '3.8'
 services:
   # Aplikacja
   app:
-    image: openjdk:17-jdk-slim
+    image: ${DOCKER_IMAGE_NAME}
     container_name: java-app
     ports:
       - "8080:8080"
-    volumes:
-      - ../target/*.jar:/app/app.jar
-    command: java -jar /app/app.jar
+    restart: always
 
   # Monitoring: Prometheus
   prometheus:

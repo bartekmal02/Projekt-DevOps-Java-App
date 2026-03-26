@@ -38,4 +38,4 @@
         - ./prometheus.yml
 
     - name: "Uruchomienie stosu Docker Compose"
-      shell: "cd /home/ubuntu/app && docker-compose up -d"
+      shell: "export DOCKER_IMAGE_NAME={{ docker_image_name }} && cd /home/ubuntu/app && docker-compose up -d"
