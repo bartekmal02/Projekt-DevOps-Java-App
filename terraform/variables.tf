@@ -26,3 +26,7 @@ variable "project_name" {
   type        = string
   default     = "DevOps-Java-App"
 }
+
+variable "public_key" {
+  type = string
+}

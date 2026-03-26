@@ -1,16 +1,18 @@
-# Definicja serwera EC2
+# 1. Rejestracja klucza przy użyciu zmiennej
+resource "aws_key_pair" "deployer" {
+  key_name   = var.key_name
+  public_key = var.public_key # ZMIANA: Zamiast tekstu "ssh-rsa...", wpisz var.public_key
+}
+
+# 2. Definicja serwera
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  key_name      = var.key_name
   
-  # Powiązanie z Twoją NOWĄ podsiecią (z pliku vpc.tf)
-  subnet_id     = aws_subnet.main_subnet.id
+  key_name      = aws_key_pair.deployer.key_name 
   
-  # Powiązanie z Twoją grupą bezpieczeństwa
-  vpc_security_group_ids = [aws_security_group.main_sg.id]
-
-  # Wymuszenie publicznego adresu IP
+  subnet_id                   = aws_subnet.main_subnet.id
+  vpc_security_group_ids      = [aws_security_group.main_sg.id]
   associate_public_ip_address = true
 
   tags = {
