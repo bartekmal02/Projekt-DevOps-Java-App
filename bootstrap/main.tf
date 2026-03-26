@@ -1,21 +1,26 @@
-# bootstrap/main.tf
-
 provider "aws" {
-  region = "eu-central-1" # Region Frankfurt
+  region = "eu-central-1"
 }
 
-# Tworzenie unikalnego Bucketa S3 na stan Terraforma
-resource "aws_s3_bucket" "terraform_state" {
-  # Nazwa bucketu
-  bucket = "barmal-devops-project-state" 
+import {
+  to = aws_s3_bucket.terraform_state
+  id = "barmal-devops-project-state"
+}
 
-  # Zabezpieczenie przed przypadkowym usunięciem infrastruktury
+resource "aws_s3_bucket" "terraform_state" {
+  bucket = "barmal-devops-project-state"
+
   lifecycle {
     prevent_destroy = true
   }
+
+  tags = {
+    Name        = "Terraform State Bucket"
+    Environment = "Dev"
+  }
 }
 
-# Włączenie wersjonowania - pozwala wrócić do poprzedniego stanu w razie błędu
+# 3. Włączenie wersjonowania
 resource "aws_s3_bucket_versioning" "enabled" {
   bucket = aws_s3_bucket.terraform_state.id
   versioning_configuration {
@@ -23,7 +28,7 @@ resource "aws_s3_bucket_versioning" "enabled" {
   }
 }
 
-# Blokada publicznego dostępu dla bezpieczeństwa danych infrastruktury
+# 4. Blokada publicznego dostępu
 resource "aws_s3_bucket_public_access_block" "public_access" {
   bucket                  = aws_s3_bucket.terraform_state.id
   block_public_acls       = true
