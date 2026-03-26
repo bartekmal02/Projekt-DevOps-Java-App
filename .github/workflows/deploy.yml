@@ -20,7 +20,7 @@ jobs:
       - name: "Checkout Code"
         uses: actions/checkout@v4
 
-      # --- ETAP 1: BUDOWANIE APLIKACJI (Java 21)
+      # --- ETAP 1: BUDOWANIE (Java + Maven + Docker) ---
       - name: "Set up JDK 21"
         uses: actions/setup-java@v4
         with:
@@ -28,74 +28,74 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: "Build Application with Maven"
-        run: mvn clean package -DskipTests # Tworzy target/my-app-1.0-SNAPSHOT.jar
-
-      # --- ETAP DOCKER (Budowanie i Push) ---
-      - name: "Login to Docker Hub"
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: "Build and Push Docker Image"
+      - name: "Build App and Docker Image"
+        id: build_step
         run: |
+          mvn clean package -DskipTests
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/my-java-app:latest .
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/my-java-app:latest
+
+      - name: "Discord: Build Status"
+        if: always()
+        run: |
+          if [ "${{ steps.build_step.outcome }}" == "success" ]; then
+            MSG="✅ **Etap 1/3:** Build & Docker Push - OK ⬇️"
+          else
+            MSG="❌ **Etap 1/3:** Build & Docker Push - BŁĄD! 🛑"
+          fi
+          curl -H "Content-Type: application/json" -d "{\"content\": \"$MSG\"}" ${{ secrets.DISCORD_WEBHOOK }}
 
       # --- ETAP 2: INFRASTRUKTURA (Terraform) ---
       - name: "Setup Terraform"
         uses: hashicorp/setup-terraform@v3
 
-      - name: "Terraform Bootstrap"
-        run: |
-          cd bootstrap
-          terraform init
-          terraform apply -auto-approve
-
-      - name: "Terraform Main Infrastructure"
+      - name: "Terraform Deploy"
+        id: tf_step
         run: |
           cd terraform
           terraform init -reconfigure
           terraform apply -auto-approve
-
-      - name: "Display Outputs"
-        id: tf_outputs
-        run: |
-          cd terraform
           echo "SERVER_IP=$(terraform output -raw instance_public_ip)" >> $GITHUB_ENV
-          terraform output
 
-      # --- ETAP 3: KONFIGURACJA I DEPLOY (Ansible) ---
-      - name: "Setup SSH Key"
+      - name: "Discord: Terraform Status"
+        if: always()
+        run: |
+          if [ "${{ steps.tf_step.outcome }}" == "success" ]; then
+            MSG="✅ **Etap 2/3:** Terraform Infrastructure - OK ⬇️"
+          else
+            MSG="❌ **Etap 2/3:** Terraform Infrastructure - BŁĄD! 🛑"
+          fi
+          curl -H "Content-Type: application/json" -d "{\"content\": \"$MSG\"}" ${{ secrets.DISCORD_WEBHOOK }}
+
+      # --- ETAP 3: ANSIBLE (Deploy) ---
+      - name: "Ansible Configuration"
+        id: ansible_step
+        if: success()
         run: |
           echo "${{ secrets.AWS_SSH_KEY_CONTENT }}" > private_key.pem
           chmod 600 private_key.pem
-
-      - name: "Wait for SSH to be ready"
-        run: |
-          echo "Waiting for SSH..."
-          until nc -zv ${{ env.SERVER_IP }} 22; do
-            echo "SSH not ready yet, sleeping 5s..."
-            sleep 5
-          done
-          echo "SSH is UP! Giving it 10 more seconds for stability..."
-          sleep 10
-
-      - name: "Run Ansible Playbook"
-        run: |
+          until nc -zv ${{ env.SERVER_IP }} 22; do sleep 5; done
           ansible-playbook -i "${{ env.SERVER_IP }}," \
-            --private-key private_key.pem \
-            -u ubuntu \
+            --private-key private_key.pem -u ubuntu \
             --ssh-common-args='-o StrictHostKeyChecking=no' \
             -e "docker_image_name=${{ secrets.DOCKERHUB_USERNAME }}/my-java-app:latest" \
             ansible/playbook.yml
 
-      # --- ETAP 4: POWIADOMIENIE (Wymóg projektu) ---
-      - name: "Discord Notification"
+      - name: "Discord: Ansible Status"
         if: always()
         run: |
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d '{"content": "🚀 **Status wdrożenia projektu:** ${{ job.status }}\n**IP Serwera:** ${{ env.SERVER_IP }}\n**Link:** http://${{ env.SERVER_IP }}:8080"}' \
-               ${{ secrets.DISCORD_WEBHOOK }}
+          if [ "${{ steps.ansible_step.outcome }}" == "success" ]; then
+            MSG="✅ **Etap 3/3:** Ansible Deployment - OK 🏁"
+          else
+            MSG="❌ **Etap 3/3:** Ansible Deployment - BŁĄD! 🛑"
+          fi
+          curl -H "Content-Type: application/json" -d "{\"content\": \"$MSG\"}" ${{ secrets.DISCORD_WEBHOOK }}
+
+      # --- FINAL REPORT ---
+      - name: "Discord: Final Success Report"
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" -X POST -d '{
+            "content": "🏆 **DEPLOYMENT SUCCESSFUL!** 🏆\n\n🔗 **Linki:**\n🌐 App: http://${{ env.SERVER_IP }}:8080\n📊 Grafana: http://${{ env.SERVER_IP }}:3000\n📈 Prom: http://${{ env.SERVER_IP }}:9090"
+          }' ${{ secrets.DISCORD_WEBHOOK }}
