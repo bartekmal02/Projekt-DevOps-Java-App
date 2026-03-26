@@ -1,0 +1,48 @@
+name: "Infrastructure Destruction"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform-destroy:
+    name: "Cleanup AWS Environment"
+    runs-on: ubuntu-latest
+    
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TF_VAR_key_name: ${{ secrets.TF_VAR_KEY_NAME }}
+      TF_VAR_public_key: ${{ secrets.TF_VAR_PUBLIC_KEY }}
+
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+
+      # --- POWIADOMIENIE START ---
+      - name: "Discord: Destruction Started"
+        run: |
+          curl -H "Content-Type: application/json" -X POST -d '{
+            "content": "⚠️ **UWAGA:** Rozpoczęto proces całkowitego usuwania infrastruktury AWS!"
+          }' ${{ secrets.DISCORD_WEBHOOK }}
+
+      # --- TERRAFORM DESTROY ---
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@v3
+
+      - name: "Terraform Destroy"
+        id: destroy_step
+        run: |
+          cd terraform
+          terraform init -reconfigure
+          terraform destroy -auto-approve
+
+      # --- POWIADOMIENIE KONIEC ---
+      - name: "Discord: Destruction Status"
+        if: always()
+        run: |
+          if [ "${{ steps.destroy_step.outcome }}" == "success" ]; then
+            MSG="✅ **Sukces:** Infrastruktura została całkowicie usunięta z AWS. Konto jest czyste."
+          else
+            MSG="❌ **BŁĄD:** Proces niszczenia nie powiódł się! Sprawdź logi w GitHub Actions, czy nie zostały jakieś zasoby (zombie resources)."
+          fi
+          curl -H "Content-Type: application/json" -d "{\"content\": \"$MSG\"}" ${{ secrets.DISCORD_WEBHOOK }}

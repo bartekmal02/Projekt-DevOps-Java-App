@@ -1,19 +1,31 @@
 package com.mycompany.app;
 
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 /**
- * Hello world!
+ * Spring Boot Web Server - Teraz to będzie działać na AWS!
  */
+@SpringBootApplication
+@RestController
 public class App {
 
-    private static final String MESSAGE = "Hello World!";
-
-    public App() {}
-
     public static void main(String[] args) {
-        System.out.println(MESSAGE);
+        // Ta linia sprawia, że aplikacja startuje jako serwer i NIE wyłącza się sama
+        SpringApplication.run(App.class, args);
     }
 
-    public String getMessage() {
-        return MESSAGE;
+    // To, co wpiszesz tutaj, zobaczysz w przeglądarce pod adresem IP:8080
+    @GetMapping("/")
+    public String sayHello() {
+        return "<h1>Hello World! Serwer na AWS działa poprawnie! 🚀</h1>";
+    }
+
+    // Punkt dla Prometheusa, żeby wiedział, że aplikacja żyje
+    @GetMapping("/health")
+    public String health() {
+        return "UP";
     }
 }

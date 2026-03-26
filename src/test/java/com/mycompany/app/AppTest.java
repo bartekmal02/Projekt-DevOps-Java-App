@@ -1,25 +1,29 @@
 package com.mycompany.app;
 
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit test for simple App.
+ * Testy dla aplikacji Spring Boot.
  */
-public class AppTest
-{
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class AppTest {
+
+    @Autowired
+    private TestRestTemplate restTemplate;
+
     @Test
-    public void testAppConstructor() {
-        App app1 = new App();
-        App app2 = new App();
-        assertEquals(app1.getMessage(), app2.getMessage());
+    public void contextLoads() {
+        // Sprawdza, czy kontekst Springa w ogóle się podnosi
     }
 
     @Test
-    public void testAppMessage()
-    {
-        App app = new App();
-        assertEquals("Hello World!", app.getMessage());
+    public void testHelloEndpoint() {
+        // Sprawdza, czy wejście na stronę główną zwraca "Hello World"
+        String body = this.restTemplate.getForObject("/", String.class);
+        assertTrue(body.contains("Hello World"));
     }
 }
