@@ -26,3 +26,15 @@ Thumbs.db
 *.tfstate
 *.tfstate.backup
 terraform.tfvars
+
+# Klucze
+id_rsa_aws
+id_rsa_aws.pub
+*.pem
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+terraform.tfvars

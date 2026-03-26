@@ -1,10 +1,13 @@
-# 1. Rejestracja klucza przy użyciu zmiennej
+import {
+  to = aws_key_pair.deployer
+  id = var.key_name
+}
+
 resource "aws_key_pair" "deployer" {
   key_name   = var.key_name
   public_key = var.public_key 
 }
 
-# 2. Definicja serwera
 resource "aws_instance" "app_server" {
   ami           = var.ami_id
   instance_type = var.instance_type
