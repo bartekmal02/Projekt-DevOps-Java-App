@@ -1,7 +1,7 @@
 # 1. Rejestracja klucza przy użyciu zmiennej
 resource "aws_key_pair" "deployer" {
   key_name   = var.key_name
-  public_key = var.public_key # ZMIANA: Zamiast tekstu "ssh-rsa...", wpisz var.public_key
+  public_key = var.public_key 
 }
 
 # 2. Definicja serwera

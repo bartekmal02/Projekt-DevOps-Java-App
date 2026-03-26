@@ -60,6 +60,16 @@ jobs:
           echo "${{ secrets.AWS_SSH_KEY_CONTENT }}" > private_key.pem
           chmod 600 private_key.pem
 
+      - name: "Wait for SSH to be ready"
+        run: |
+          echo "Waiting for SSH..."
+          until nc -zv ${{ env.SERVER_IP }} 22; do
+            echo "SSH not ready yet, sleeping 5s..."
+            sleep 5
+          done
+          echo "SSH is UP! Giving it 10 more seconds for stability..."
+          sleep 10
+
       - name: "Run Ansible Playbook"
         run: |
           ansible-playbook -i "${{ env.SERVER_IP }}," \
