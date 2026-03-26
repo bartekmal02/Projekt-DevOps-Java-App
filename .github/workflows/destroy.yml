@@ -24,10 +24,12 @@ jobs:
         run: |
           cd terraform
           terraform init -reconfigure
-          # Niszczymy tylko serwer i sieć, zostawiamy klucz SSH (deployer)
-          # Upewnij się, że nazwy (np. app_server) zgadzają się z Twoimi plikami .tf
+          # Musimy podać zmienne, inaczej Terraform pyta o nie w konsoli i zawiesza proces
           terraform destroy -auto-approve \
+            -var="key_name=${{ secrets.TF_VAR_KEY_NAME }}" \
+            -var="public_key=${{ secrets.TF_VAR_PUBLIC_KEY }}" \
             -target=aws_instance.app_server \
             -target=aws_security_group.main_sg \
             -target=aws_subnet.main_subnet \
+            -target=aws_vpc.main_vpcbnet \
             -target=aws_vpc.main_vpc

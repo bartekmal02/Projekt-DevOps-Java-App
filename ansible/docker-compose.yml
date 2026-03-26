@@ -27,3 +27,10 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+    # DODAJ TO:
+    volumes:
+      - grafana_storage:/var/lib/grafana
+    restart: always
+
+volumes:
+  grafana_storage:
