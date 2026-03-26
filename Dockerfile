@@ -1,5 +1,5 @@
 # 1. Obraz Javy 21
-FROM openjdk:21-slim
+FROM eclipse-temurin:21-jre-jammy
 
 # 2. Katalog roboczy wewnątrz kontenera
 WORKDIR /app

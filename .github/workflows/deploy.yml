@@ -3,7 +3,7 @@ name: "Infrastructure Deployment"
 on:
   push:
     branches:
-      - master  # Upewnij się, że Twoja gałąź to 'master'
+      - master
 
 jobs:
   terraform:
@@ -20,7 +20,7 @@ jobs:
       - name: "Checkout Code"
         uses: actions/checkout@v4
 
-      # --- ETAP 1: BUDOWANIE APLIKACJI (Java 21) ---
+      # --- ETAP 1: BUDOWANIE APLIKACJI (Java 21)
       - name: "Set up JDK 21"
         uses: actions/setup-java@v4
         with:
@@ -40,7 +40,6 @@ jobs:
 
       - name: "Build and Push Docker Image"
         run: |
-          # Zastąp 'twoja-nazwa' swoją nazwą użytkownika z Docker Hub
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/my-java-app:latest .
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/my-java-app:latest
 
