@@ -1,7 +1,7 @@
 # DEFINICJA GRUPY BEZPIECZEŃSTWA (Security Group)
 resource "aws_security_group" "main_sg" {
   name        = "${var.project_name}-sg"
-  description = "Allow SSH and App traffic"
+  description = "Allow SSH, App and Monitoring traffic"
   vpc_id      = aws_vpc.main_vpc.id
 
   # Reguła wejściowa: SSH (dla Ansible)
@@ -9,13 +9,29 @@ resource "aws_security_group" "main_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Pozwala na połączenie SSH z dowolnego IP
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Reguła wejściowa: Aplikacja (np. Java Spring na 8080)
+  # Reguła wejściowa: Aplikacja (Java Spring na 8080)
   ingress {
     from_port   = 8080
     to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Reguła wejściowa: Prometheus
+  ingress {
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Reguła wejściowa: Grafana
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
