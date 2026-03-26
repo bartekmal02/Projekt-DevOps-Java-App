@@ -50,6 +50,7 @@ graph TD
         B -- status --> J[Discord Webhook]
         F -- status --> J
     end
+```
 
 ## ⚙️ Kluczowe Funkcjonalności
 
