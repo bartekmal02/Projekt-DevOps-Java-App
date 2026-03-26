@@ -50,6 +50,15 @@ jobs:
       - name: "Setup Terraform"
         uses: hashicorp/setup-terraform@v3
 
+      # --- BEZPIECZNY IMPORT KLUCZA ---
+      - name: "Terraform: Safe Key Import"
+        continue-on-error: true
+        run: |
+          cd terraform
+          terraform init -reconfigure
+          # Próba importu klucza. Jeśli go nie ma w AWS, echo zapobiegnie błędowi workflow.
+          terraform import aws_key_pair.deployer deployer || echo "Key not found in AWS, Terraform will create it during Apply."
+
       - name: "Terraform Deploy"
         id: tf_step
         run: |
