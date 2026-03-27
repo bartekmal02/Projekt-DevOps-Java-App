@@ -11,6 +11,7 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
     steps:
       - name: "Checkout Code"
@@ -19,17 +20,38 @@ jobs:
       - name: "Setup Terraform"
         uses: hashicorp/setup-terraform@v3
 
+      # 1. Powiadomienie o rozpoczęciu
+      - name: "Notify Discord - Start"
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{"content": "🚀 **[AWS]** Rozpoczynam usuwanie infrastruktury..."}' \
+          $DISCORD_WEBHOOK
+
       - name: "Terraform Destroy (Selective)"
         id: destroy_step
         run: |
           cd terraform
           terraform init -reconfigure
-          # Musimy podać zmienne, inaczej Terraform pyta o nie w konsoli i zawiesza proces
           terraform destroy -auto-approve \
             -var="key_name=${{ secrets.TF_VAR_KEY_NAME }}" \
             -var="public_key=${{ secrets.TF_VAR_PUBLIC_KEY }}" \
             -target=aws_instance.app_server \
             -target=aws_security_group.main_sg \
             -target=aws_subnet.main_subnet \
-            -target=aws_vpc.main_vpcbnet \
             -target=aws_vpc.main_vpc
+
+      # 2. Powiadomienie o sukcesie
+      - name: "Notify Discord - Success"
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{"content": "✅ **[AWS]** Infrastruktura została pomyślnie usunięta."}' \
+          $DISCORD_WEBHOOK
+
+      # 3. Powiadomienie o błędzie
+      - name: "Notify Discord - Failure"
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{"content": "❌ **[AWS]** BŁĄD podczas usuwania zasobów! Sprawdź logi w GitHub Actions."}' \
+          $DISCORD_WEBHOOK
