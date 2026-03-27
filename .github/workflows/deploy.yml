@@ -86,9 +86,9 @@ jobs:
       # --- WSTRZYKIWANIE WEBHOOKA DO GRAFANY ---
       - name: "Inject Grafana Alerts Webhook"
         run: |
-          # Podmienia 'DISCORD_URL_PLACEHOLDER' w pliku na prawdziwy secret dla Grafany
-          sed -i "s|DISCORD_URL_PLACEHOLDER|${{ secrets.DISCORD_GRAFANA_WEBHOOK }}|g" grafana/provisioning/alerting/contact_points.yaml
-          
+          # Poprawiona ścieżka: dodano 'ansible/' na początku
+          sed -i "s|DISCORD_URL_PLACEHOLDER|${{ secrets.DISCORD_GRAFANA_WEBHOOK }}|g" ansible/grafana/provisioning/alerting/contact_points.yaml
+
       - name: "Ansible Configuration"
         id: ansible_step
         if: success()
