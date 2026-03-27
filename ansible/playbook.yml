@@ -37,5 +37,21 @@
         - ./docker-compose.yml
         - ./prometheus.yml
 
+    - name: "Kopiowanie folderu Grafana (Dashboards & Provisioning)"
+      copy:
+        src: ./grafana/
+        dest: /home/ubuntu/app/grafana/
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: "Ustawienie uprawnień dla kontenera Grafana (User ID 472)"
+      file:
+        path: "/home/ubuntu/app/grafana"
+        owner: "472"
+        group: "472"
+        recurse: yes
+    # --------------------------------
+
     - name: "Uruchomienie stosu Docker Compose"
-      shell: "export DOCKER_IMAGE_NAME={{ docker_image_name }} && cd /home/ubuntu/app && docker-compose pull && docker-compose up -d"
+      shell: "export DOCKER_IMAGE_NAME={{ docker_image_name }} && cd /home/ubuntu/app && docker-compose pull && docker-compose up -d --force-recreate"
