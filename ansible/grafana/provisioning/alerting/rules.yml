@@ -1,0 +1,47 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: 'Critical-Alerts'
+    folder: 'Infrastruktura'
+    interval: 60s
+    rules:
+      # --- ALERT 1: RAM > 90% ---
+      - uid: 'mem_high'
+        title: 'KRYTYCZNY: RAM > 90%'
+        condition: 'A'
+        data:
+          - refId: 'A'
+            model:
+              expr: '100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))'
+              datasource: { type: 'prometheus', uid: 'prometheus' }
+        for: '2m'
+        annotations:
+          summary: 'Serwer AWS: Kończy się pamięć RAM!'
+
+      # --- ALERT 2: CPU > 90% ---
+      - uid: 'cpu_high'
+        title: 'KRYTYCZNY: CPU > 90%'
+        condition: 'A'
+        data:
+          - refId: 'A'
+            model:
+              # Liczy średnie zużycie CPU ze wszystkich rdzeni, ignorując stan bezczynności (idle)
+              expr: '100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)'
+              datasource: { type: 'prometheus', uid: 'prometheus' }
+        for: '5m' # Dłuższy czas, bo krótkie skoki CPU (np. przy starcie aplikacji)
+        annotations:
+          summary: 'Serwer AWS: Procesor przeciążony!'
+
+      # --- ALERT 3: SERVER DOWN ---
+      - uid: 'instance_down'
+        title: 'KRYTYCZNY: Serwer nie odpowiada'
+        condition: 'A'
+        data:
+          - refId: 'A'
+            model:
+              expr: 'up == 0'
+              datasource: { type: 'prometheus', uid: 'prometheus' }
+        for: '1m'
+        annotations:
+          summary: 'Serwer AWS: OFFLINE (Instance Down)'

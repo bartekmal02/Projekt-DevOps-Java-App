@@ -50,14 +50,19 @@ jobs:
       - name: "Setup Terraform"
         uses: hashicorp/setup-terraform@v3
 
-      # --- BEZPIECZNY IMPORT KLUCZA ---
-      - name: "Terraform: Safe Key Import"
-        continue-on-error: true
+      # --- INTELIGENTNY IMPORT LUB KREACJA KLUCZA ---
+      - name: "Terraform: Smart Key Check & Import"
         run: |
           cd terraform
           terraform init -reconfigure
-          # Próba importu klucza. Jeśli go nie ma w AWS, echo zapobiegnie błędowi workflow.
-          terraform import aws_key_pair.deployer deployer || echo "Key not found in AWS, Terraform will create it during Apply."
+          # Sprawdzamy, czy klucz o nazwie z Secretów jest już w pliku stanu (state)
+          if terraform state show aws_key_pair.deployer > /dev/null 2>&1; then
+            echo "✅ Klucz $TF_VAR_key_name jest już w pliku stanu. Pomijam import."
+          else
+            echo "🔍 Klucza $TF_VAR_key_name nie ma w stanie. Próba importu z AWS..."
+            # Próbujemy zaimportować klucz o nazwie przekazanej w zmiennej
+            terraform import aws_key_pair.deployer "$TF_VAR_key_name" || echo "⚠️ Klucz nie istnieje w AWS. Terraform stworzy go w następnym kroku."
+          fi
 
       - name: "Terraform Deploy"
         id: tf_step
@@ -78,6 +83,12 @@ jobs:
           curl -H "Content-Type: application/json" -d "{\"content\": \"$MSG\"}" ${{ secrets.DISCORD_WEBHOOK }}
 
       # --- ETAP 3: ANSIBLE (Deploy) ---
+      # --- WSTRZYKIWANIE WEBHOOKA DO GRAFANY ---
+      - name: "Inject Grafana Alerts Webhook"
+        run: |
+          # Podmienia 'DISCORD_URL_PLACEHOLDER' w pliku na prawdziwy secret dla Grafany
+          sed -i "s|DISCORD_URL_PLACEHOLDER|${{ secrets.DISCORD_GRAFANA_WEBHOOK }}|g" grafana/provisioning/alerting/contact_points.yaml
+          
       - name: "Ansible Configuration"
         id: ansible_step
         if: success()
