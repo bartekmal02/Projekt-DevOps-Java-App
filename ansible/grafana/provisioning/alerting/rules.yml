@@ -26,10 +26,9 @@ groups:
         data:
           - refId: 'A'
             model:
-              # Liczy średnie zużycie CPU ze wszystkich rdzeni, ignorując stan bezczynności (idle)
               expr: '100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)'
               datasource: { type: 'prometheus', uid: 'prometheus' }
-        for: '5m' # Dłuższy czas, bo krótkie skoki CPU (np. przy starcie aplikacji)
+        for: '5m'
         annotations:
           summary: 'Serwer AWS: Procesor przeciążony!'
 
