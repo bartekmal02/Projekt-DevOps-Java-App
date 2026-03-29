@@ -20,14 +20,15 @@
         state: started
         enabled: yes
 
-    - name: "Tworzenie katalogu na aplikacje"
+    - name: "Tworzenie katalogu głównego aplikacji"
       file:
         path: /home/ubuntu/app
         state: directory
         owner: ubuntu
         group: ubuntu
+        mode: '0755'
 
-    - name: "Kopiowanie plików konfiguracyjnych"
+    - name: "Kopiowanie plików głównych"
       copy:
         src: "{{ item }}"
         dest: /home/ubuntu/app/
@@ -37,21 +38,21 @@
         - ./docker-compose.yml
         - ./prometheus.yml
 
-    - name: "Kopiowanie folderu Grafana (Dashboards & Provisioning)"
+    - name: "Kopiowanie całej struktury folderu grafana"
       copy:
-        src: ./grafana/
-        dest: /home/ubuntu/app/grafana/
+        src: ./grafana
+        dest: /home/ubuntu/app/
         owner: ubuntu
         group: ubuntu
         mode: '0755'
 
-    - name: "Ustawienie uprawnień dla kontenera Grafana (User ID 472)"
+    - name: "Ustawienie uprawnień dla User ID 472 (Grafana)"
       file:
         path: "/home/ubuntu/app/grafana"
         owner: "472"
         group: "472"
+        state: directory
         recurse: yes
-    # --------------------------------
 
     - name: "Uruchomienie stosu Docker Compose"
       shell: "export DOCKER_IMAGE_NAME={{ docker_image_name }} && cd /home/ubuntu/app && docker-compose pull && docker-compose up -d --force-recreate"
