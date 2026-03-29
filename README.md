@@ -73,22 +73,39 @@ System monitoringu został wdrożony jako integralna część infrastruktury:
 * **Spring Boot Actuator:** Aplikacja wystawia metryki w formacie Prometheus pod dedykowanym endpointem `/actuator/prometheus`.
 * **Docker Volumes:** Zastosowano **trwałe wolumeny** dla Grafany, dzięki czemu Dashboardy i konfiguracja Data Source nie znikają po restarcie lub podmianie kontenerów.
 * **Wizualizacja:** Zaimportowano profesjonalny Dashboard (**ID: 4701**) do szczegółowego monitorowania stanu maszyny wirtualnej **JVM** (Heap Memory, Garbage Collection, CPU Usage).
+* **Alerting:** Skonfigurowano reguły alarmowe w Grafanie (CPU > 90%, RAM > 90%, Instance Down), które automatycznie wysyłają powiadomienia na dedykowany kanał Discord przy użyciu Contact Points.
 
 ---
 
 ## 🚀 Instrukcja Uruchomienia
 
 ### Konfiguracja GitHub Secrets
-W ustawieniach repozytorium (`Settings > Secrets and variables > Actions`) należy dodać następujące wpisy:
+W ustawieniach repozytorium (`Settings > Secrets and variables > Actions`) należy dodać następujące wpisy, aby umożliwić poprawne działanie Pipeline'u:
 
-* `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` – poświadczenia dostępu do AWS.
-* `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` – dane logowania do rejestru obrazów.
-* `DISCORD_WEBHOOK` – URL do kanału powiadomień.
-* `AWS_SSH_KEY_CONTENT` – zawartość klucza prywatnego (** .pem **).
-* `TF_VAR_KEY_NAME` / `TF_VAR_PUBLIC_KEY` – nazwa i treść klucza publicznego zarejestrowanego w AWS.
+* **Poświadczenia AWS:**
+    * `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` – Dane uwierzytelniające konto AWS.
+    * `AWS_SSH_KEY_CONTENT` – Pełna zawartość prywatnego klucza dostępu (** .pem **).
+* **Rejestr Obrazów:**
+    * `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` – Dane logowania do Docker Hub.
+* **Powiadomienia Discord:**
+    * `DISCORD_WEBHOOK` – Główny URL powiadomień o statusie wdrożenia.
+    * `DISCORD_GRAFANA_WEBHOOK` – Dedykowany URL wstrzykiwany do konfiguracji alertingu Grafany.
+* **Zmienne Terraform:**
+    * `TF_VAR_KEY_NAME` – Nazwa pary kluczy SSH zarejestrowanej w AWS.
+    * `TF_VAR_PUBLIC_KEY` – Treść klucza publicznego służącego do autoryzacji SSH.
 
-### Wyzwalanie procesów
-1.  **Wdrożenie:** Każdy `git push` na branch **master** uruchamia pełny, zautomatyzowany proces deploymentu.
-2.  **Usuwanie:** Manualne uruchomienie workflow **Infrastructure Destruction** z zakładki **Actions** pozwala na bezpieczne i selektywne usunięcie infrastruktury.
+> [!TIP] Bezpieczeństwo
+> Wszystkie powyższe dane są przechowywane w formie zaszyfrowanych sekretów GitHub Actions i nigdy nie są logowane w procesach budowania ani wyświetlane w logach konsoli.
+
+
+### Zarządzanie Kosztami i Destrukcja
+Projekt wspiera bezpieczne i szybkie usuwanie zasobów, co jest kluczowe dla optymalizacji kosztów w chmurze publicznej.
+
+> [!IMPORTANT] Metody usuwania zasobów
+> 
+> * **Workflow "Infrastructure Destruction":** Dedykowany, manualnie wyzwalany proces w zakładce **Actions**, który wykonuje polecenie `terraform destroy` w sposób zautomatyzowany.
+> * **Manualna Destrukcja:** Możliwość usunięcia całej infrastruktury bezpośrednio z terminala poprzez komendę `terraform destroy` w katalogu projektu.
+> * **Selective Cleanup:** Dzięki zastosowaniu **Remote State (S3)**, destrukcja jest precyzyjna i usuwa tylko zasoby powiązane z projektem (instancje EC2, Security Groups), nie naruszając pozostałych elementów konta AWS.
+> * **Idempotentność:** System gwarantuje, że po pełnej destrukcji można ponownie postawić identyczne środowisko jedną komendą, co potwierdza wysoką stabilność skryptów IaC.
 
 ---
