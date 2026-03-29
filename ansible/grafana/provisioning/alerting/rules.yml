@@ -12,6 +12,9 @@ groups:
         condition: 'A'
         data:
           - refId: 'A'
+            relativeTimeRange:
+              from: 300
+              to: 0
             model:
               expr: '100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))'
               datasource: { type: 'prometheus', uid: 'prometheus' }
@@ -25,6 +28,9 @@ groups:
         condition: 'A'
         data:
           - refId: 'A'
+            relativeTimeRange: # DODANO TO
+              from: 300
+              to: 0
             model:
               expr: '100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)'
               datasource: { type: 'prometheus', uid: 'prometheus' }
@@ -38,6 +44,9 @@ groups:
         condition: 'A'
         data:
           - refId: 'A'
+            relativeTimeRange:
+              from: 300
+              to: 0
             model:
               expr: 'up == 0'
               datasource: { type: 'prometheus', uid: 'prometheus' }
